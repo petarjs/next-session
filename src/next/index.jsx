@@ -3,18 +3,12 @@ import { parse as parseCookie } from 'cookie';
 import nextSession from '../index';
 
 // eslint-disable-next-line import/prefer-default-export
-export function withSession(App, options) {
-  class WithSession extends React.Component {
-    constructor(props) {
-      super(props);
-      this.session = props.session || this.session || undefined;
-    }
-
-    static async getInitialProps(appCtx) {
-      const { ctx } = appCtx;
-
-      let appProps = { pageProps: {} };
-
+export function withSession(Page, options) {
+  const strategy = options.strategy || 'hybrid';
+  const WithSession = props => <Page {...props} />;
+  if (strategy === 'hybrid') {
+    WithSession.getInitialProps = async ctx => {
+      let pageProps = {};
       if (ctx.req && ctx.res) {
         ctx.req.cookies =
           ctx.req.cookies ||
@@ -26,23 +20,15 @@ export function withSession(App, options) {
           nextSession(options)(ctx.req, ctx.res, resolve);
         });
       }
-
-      ctx.session = (ctx.req && ctx.req.session) || this.session || {};
-
-      if (App.getInitialProps) {
-        appProps = await App.getInitialProps(appCtx);
+      ctx.session = (ctx.req && ctx.req.session) || undefined;
+      if (Page.getInitialProps) {
+        pageProps = await Page.getInitialProps(ctx);
       }
-
-      return { session: ctx.session, ...appProps };
-    }
-
-    render() {
-      return <App {...this.props} session={this.session} />;
-    }
+      return { session: ctx.session, ...pageProps };
+    };
   }
-
-  WithSession.displayName = `withSession(${App.displayName ||
-    App.name ||
+  WithSession.displayName = `withSession(${Page.displayName ||
+    Page.name ||
     'Component'})`;
   return WithSession;
 }
