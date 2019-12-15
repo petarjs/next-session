@@ -1,6 +1,6 @@
 {
   "name": "next-session",
-  "version": "2.1.1",
+  "version": "3.0.0",
   "description": "Simple promise-based session middleware for Next.js",
   "keywords": [
     "javascript",
@@ -15,7 +15,7 @@
   ],
   "scripts": {
     "build": "npx babel src --out-dir lib",
-    "lint": "eslint src test --ignore-path .gitignore",
+    "lint": "eslint src --ignore-path .gitignore",
     "test": "jest --coverage --coverageReporters=text-lcov > coverage.lcov"
   },
   "repository": {

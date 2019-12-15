@@ -6,7 +6,9 @@
 [![codecov](https://codecov.io/gh/hoangvvo/next-session/branch/master/graph/badge.svg)](https://codecov.io/gh/hoangvvo/next-session)
 [![PRs Welcome](https://badgen.net/badge/PRs/welcome/ff5252)](CONTRIBUTING.md)
 
-Simple *promise-based* session middleware. Supports [Next.js](https://nextjs.org/).
+Simple *promise-based* session middleware for [Next.js](https://nextjs.org/).
+
+** This is WIP **.
 
 ## Installation
 
@@ -41,8 +43,8 @@ app.use(session(opts));
 
 | options | description | default |
 |---------|-------------|---------|
-| name | The name of the cookie to be read from the request and set to the response. | `sessionId` |
-| store | The session store instance to be used. | `MemoryStore` |
+| name | The name of the cookie to be read from the request and set to the response. | `sid` |
+| store | The session store instance to be used. You must specify the store to be used. Several stores can be found in `lib/stores`. | `null (required)` |
 | genid | The function that generates a string for a new session ID. | `crypto.randomBytes(16).toString('hex')` |
 | rolling | Force the cookie to be set on every request despite no modification, which extends the life time of the cookie in the browser | `false` |
 | touchAfter | Only touch the session store after an amount of time, except when the session is modified, to decrease database load. Setting the value to `-1` will disable `touch()`. | `0` (Touch every time) |
@@ -80,11 +82,13 @@ The unique id that associates to the current session.
 
 The session store to use for session middleware (see `options` above).
 
+Unlike libraries such as `express-session`, `next-session` does not default to a store. You must specify a session store or use one from `next-session/lib/stores`.
+
 #### Implementation
 
-A compatible session store must extend from `./src/session/store` and include three functions: `set(sid)`, `get(sid)`, and `destroy(sid)`. The function `touch(sid, session)` is recommended. The store may emit `store.emit('disconnect')` or `store.emit('connect')` to inform its readiness.
+A compatible session store must extend from `./src/store` and include three functions: `set(sid)`, `get(sid)`, and `destroy(sid)`. The function `touch(sid, session)` is recommended. The store may emit `store.emit('disconnect')` or `store.emit('connect')` to inform its readiness.
 
-All functions should return **Promises** (*callbacks* are not supported). For an example of a session store implementation, see [`MemoryStore`](src/session/memory.js).
+All functions should return **Promises** (*callbacks* are not supported). For an example of a session store implementation, see [`MemoryStore`](src/store/memory.js).
 
 Stores that use callbacks will be promisified using `util.promisify`.
 
