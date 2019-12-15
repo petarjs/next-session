@@ -40,13 +40,18 @@ module.exports = function session(options = {}) {
     storeReady = true;
   });
 
-  return (req, res, next) => {
-    if (req.session || !storeReady) return next();
+  return async (req, res, next) => {
+    if (req.session || !storeReady) {
+      next();
+      return;
+    }
 
     req.sessionStore = store;
     req.sessionId = req.cookies[name];
 
-    function getSession() {
+    let sessionSaved = false;
+
+    const hashedsess = await (() => {
       if (!req.sessionId) {
         return Promise.resolve(
           hash(req.sessionStore.generate(req, genid(), cookieOptions))
@@ -56,55 +61,48 @@ module.exports = function session(options = {}) {
         if (sess) return hash(req.sessionStore.createSession(req, sess));
         return hash(req.sessionStore.generate(req, genid(), cookieOptions));
       });
-    }
+    })();
 
-    return getSession().then(hashedsess => {
-      let sessionSaved = false;
-      const oldEnd = res.end;
-      let ended = false;
+    const oldEnd = res.end;
+    let ended = false;
 
-      res.end = function resEndProxy(...args) {
-        if (ended) {
-          return false;
-        }
-        ended = true;
+    res.end = async function resEndProxy(...args) {
+      if (ended) return;
+      ended = true;
 
-        function saveSession() {
-          if (req.session) {
-            if (hash(req.session) !== hashedsess) {
-              sessionSaved = true;
-              return req.session.save();
-            }
-            if (req.session.cookie.maxAge && touchAfter >= 0) {
-              const minuteSinceTouched =
-                req.session.cookie.maxAge -
-                (req.session.cookie.expires - new Date());
-              if (minuteSinceTouched < touchAfter) return Promise.resolve();
-              return req.session.touch();
-            }
+      await (() => {
+        if (req.session) {
+          if (hash(req.session) !== hashedsess) {
+            sessionSaved = true;
+            return req.session.save();
           }
-          return Promise.resolve();
-        }
-
-        return saveSession().then(() => {
-          if (
-            (req.cookies[name] !== req.sessionId ||
-              sessionSaved ||
-              rollingSession) &&
-            req.session
-          ) {
-            res.setHeader(
-              'Set-Cookie',
-              req.session.cookie.serialize(name, req.sessionId)
-            );
+          if (req.session.cookie.maxAge && touchAfter >= 0) {
+            const minuteSinceTouched =
+              req.session.cookie.maxAge -
+              (req.session.cookie.expires - new Date());
+            if (minuteSinceTouched < touchAfter) return Promise.resolve();
+            return req.session.touch();
           }
+        }
+        return Promise.resolve();
+      })();
 
-          oldEnd.apply(this, args);
-        });
-      };
+      if (
+        (req.cookies[name] !== req.sessionId ||
+          sessionSaved ||
+          rollingSession) &&
+        req.session
+      ) {
+        res.setHeader(
+          'Set-Cookie',
+          req.session.cookie.serialize(name, req.sessionId)
+        );
+      }
 
-      next();
-    });
+      oldEnd.apply(this, args);
+    };
+
+    next();
   };
 };
 
