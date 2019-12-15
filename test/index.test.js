@@ -1,7 +1,7 @@
 const request = require('supertest');
 const setUpServer = require('./helper/setUpServer');
 const session = require('../lib/index');
-const MemoryStore = require('../lib/store/memory');
+const MemoryStore = require('../lib/stores/memory');
 
 const { Store } = session;
 
