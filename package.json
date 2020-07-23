@@ -16,7 +16,7 @@
   ],
   "sideEffects": false,
   "scripts": {
-    "prepublish": "npm run build",
+    "prepare": "npm run build",
     "build": "tsc --outDir dist",
     "lint": "eslint src --ext ts --ignore-path .gitignore",
     "test": "yarn build && jest --coverageReporters=text-lcov > coverage.lcov"
